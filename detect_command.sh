@@ -1,0 +1,1 @@
+($EXECUTE_COMMAND)& sleep 10 ; ps -aux | grep tools/train.py | head -n1 > /tmp/tmp.txt ; ps | grep timeout | cut -c1-5 | xargs kill -9 ; ps -ef | grep tools/train.py | cut -c10- | cut -d' ' -f1 | xargs kill -9 ;
