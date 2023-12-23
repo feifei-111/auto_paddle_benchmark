@@ -10,6 +10,8 @@ import psutil
 configs = {
     "nsys_bin" : "/home/data/nsys_2022/bin/nsys",
     "timeline_dir": "/root/auto_command/timelines/",
+    "json_dir": "/root/auto_command/jsons/",
+    "analyse_log_dir": "/root/auto_command/analyse_json_logs/",
     "repo_root":{
         'PaddleSeg':  "/root/PaddleSeg/", 
         "PaddleClas": "/root/PaddleClas/",
@@ -169,9 +171,9 @@ def get_nsys_command(train_command, mode):
     flags = train_command[0:idx]
     assert idx >= 0 
     nsys_bin = configs['nsys_bin']
-    output_report_file = f"--output {configs['timeline_dir']}/{mode}_{args.name}_report"
+    output_report_file = f"--output {configs['timeline_dir']}/{args.name}_{mode}_report"
     nsys_prefix = f"{nsys_bin} profile -t cuda,nvtx --cpuctxsw=process-tree --capture-range=cudaProfilerApi --force-overwrite true "
-    return f"PROFILE=True {flags} {nsys_prefix} {output_report_file} {train_command[idx:]}"
+    return f"PROFILE=True {flags} {nsys_prefix} {output_report_file} {train_command[idx:]}", f"{configs['timeline_dir']}/{args.name}_{mode}_report"
 
 def sot_command(base):
     enable_to_static = ast_command(base)
@@ -198,8 +200,8 @@ def ast_command(base):
     base = base.replace('Global.to_static=False', 'Global.to_static=True')
     base = base.replace('Global.to_static=false', 'Global.to_static=true')
     base = base.replace('model.to_static=False', 'model.to_static=True')
-    return "ENABLE_FALL_BACK=False " + base
-    
+    return "DY2ST_TEST=True ENABLE_FALL_BACK=False " + base
+
 def train(base, command_fn, mode):
     cmd = command_fn(base)
     if not args.profile: 
@@ -214,10 +216,21 @@ def train(base, command_fn, mode):
             raise RuntimeError(f"Can not get speed, error is {e}")
         return speed
     else: 
-        cmd = get_nsys_command(cmd, mode)
+        cmd, report_name = get_nsys_command(cmd, mode)
         print (f"训练：{mode}")
         print ("Training Command: ", f"cd {root_path} && " + cmd, flush=True)
         proc = os.system(f"cd {root_path} && " + cmd)
+
+        nsys_bin = configs['nsys_bin']
+        json_path = f"{configs['json_dir']}/{args.name}_{mode}_report.json"
+        export_json_command = f"{nsys_bin} export {report_name}.nsys-rep --type json --force-overwrite true -o {json_path}"
+        proc = os.system(export_json_command)
+
+        ana_log_path = f"{configs['analyse_log_dir']}/{args.name}_{mode}.log"
+        analyse_cmd = f"python analyse_json.py {json_path} {ana_log_path}"
+        print(f"Start Analyse: {analyse_cmd}")
+        proc = os.system(analyse_cmd)
+
         return "profile done, no speed info."
 
 dy_speed = train(base_command, dy_command, "Dy_Mode")
