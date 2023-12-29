@@ -172,7 +172,7 @@ def get_nsys_command(train_command, mode):
     assert idx >= 0 
     nsys_bin = configs['nsys_bin']
     output_report_file = f"--output {configs['timeline_dir']}/{args.name}_{mode}_report"
-    nsys_prefix = f"{nsys_bin} profile -t cuda,nvtx --cpuctxsw=process-tree --capture-range=cudaProfilerApi --force-overwrite true "
+    nsys_prefix = f"{nsys_bin} profile -t cuda,nvtx -s cpu --cpuctxsw=process-tree --capture-range=cudaProfilerApi --force-overwrite true "
     return f"PROFILE=True {flags} {nsys_prefix} {output_report_file} {train_command[idx:]}", f"{configs['timeline_dir']}/{args.name}_{mode}_report"
 
 def sot_command(base):
