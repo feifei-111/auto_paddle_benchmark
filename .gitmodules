@@ -1,0 +1,3 @@
+[submodule "nsys_analyser"]
+	path = nsys_analyser
+	url = https://github.com/feifei-111/nsys_analyser.git
