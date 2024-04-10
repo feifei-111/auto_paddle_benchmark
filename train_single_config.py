@@ -7,21 +7,24 @@ import psutil
 #    准备训练命令
 #######################
 
+ROOT_PATH = "/workspace/auto_paddle_benchmark"
+MODEL_PATH = ROOT_PATH + "/PaddleModels"
+
 configs = {
-    "nsys_bin" : "/home/data/nsys_2022/bin/nsys",
-    "timeline_dir": "/root/auto_command/timelines/",
-    "json_dir": "/root/auto_command/jsons/",
-    "analyse_log_dir": "/root/auto_command/analyse_json_logs/",
+    "nsys_bin" : "nsys",
+    "timeline_dir": ROOT_PATH + "/timelines/",
+    "json_dir": ROOT_PATH + "/jsons/",
+    "analyse_log_dir": ROOT_PATH + "/analyse_json_logs/",
     "repo_root":{
-        'PaddleSeg':  "/root/PaddleSeg/", 
-        "PaddleClas": "/root/PaddleClas/",
-        "PaddleDetection": "/root/PaddleDetection/",
-        "PaddleOCR": "/root/PaddleOCR/",
-        "PaddleVideo": "/root/PaddleVideo/",
-        "PaddleGAN": "/root/PaddleGAN/",
-        "PaddleNLP": "/root/PaddleNLP/tests/",
+        'PaddleSeg':  MODEL_PATH + "/PaddleSeg/", 
+        "PaddleClas": MODEL_PATH + "/PaddleClas/",
+        "PaddleDetection": MODEL_PATH + "/PaddleDetection/",
+        "PaddleOCR": MODEL_PATH + "/PaddleOCR/",
+        "PaddleVideo": MODEL_PATH + "/PaddleVideo/",
+        "PaddleGAN": MODEL_PATH + "/PaddleGAN/",
+        "PaddleNLP": MODEL_PATH + "/PaddleNLP/tests/",
     },
-    "python_train_pattern": ["tools/train.py", "python main.py", "tools/main.py", "test_tipc/train.py"],
+    "python_train_pattern": ["tools/train.py", "python main.py", "tools/main.py", "test_tipc/train.py", "../examples/language_model/bert/run_pretrain.py"],
 }
 
 def parameter_parser():
@@ -40,7 +43,7 @@ if args.repo == "":
 print (args)
 
 def get_command_error_file():
-    if args.debug: return "/root/auto_command/debug.txt"
+    if args.debug: return ROOT_PATH + "/debug.txt"
     else: return "/dev/null"
 
 def clear_debug_file():
@@ -95,6 +98,8 @@ def wait_for_python_process(process):
         time.sleep(2)
         counter -= 1
         for proc in psutil.process_iter(['pid', 'name', 'username']):
+            if proc.status() == "zombie":
+                continue
             if (has_train_pattern(" ".join(proc.cmdline())) and is_child_of(process, proc)):
                 return " ".join(proc.cmdline())
     raise RuntimeError("Can not find python process")
@@ -178,7 +183,7 @@ def get_nsys_command(train_command, mode):
 def sot_command(base):
     enable_to_static = ast_command(base)
     enable_to_static = enable_to_static.replace("ENABLE_FALL_BACK=False", "ENABLE_FALL_BACK=True")
-    return "LOG_LEVEL=-1 EVENT_LEVEL=-1 COST_MODEL=False " + enable_to_static
+    return "SOT_LOG_LEVEL=-1 EVENT_LEVEL=-1 COST_MODEL=False " + enable_to_static
 
 def dy_command(base):
     base = base.replace('to_static_training=True', 'to_static_training=False')

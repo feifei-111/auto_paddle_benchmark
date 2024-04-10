@@ -74,3 +74,7 @@ python analysis_log.py --input output_clas.txt --output output_clas.xlsx
 rm -rf /home/data/datas/*
 cp ./*.png /home/data/datas
 cp ./*.xlsx /home/data/datas
+
+
+
+python train_single_config.py --name xxx --profile
